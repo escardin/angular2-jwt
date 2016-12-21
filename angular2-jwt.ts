@@ -1,15 +1,15 @@
 import {
-    Http,
-    Headers,
-    Request,
-    RequestOptions,
-    RequestOptionsArgs,
-    RequestMethod,
-    Response,
-    HttpModule
+  Http,
+  Headers,
+  Request,
+  RequestOptions,
+  RequestOptionsArgs,
+  RequestMethod,
+  Response,
+  HttpModule
 } from "@angular/http";
-import {Injectable, Provider, NgModule, Optional, SkipSelf, ModuleWithProviders} from "@angular/core";
-import {Observable} from "rxjs/Observable";
+import { Injectable, Provider, NgModule, Optional, SkipSelf, ModuleWithProviders, OpaqueToken } from "@angular/core";
+import { Observable } from "rxjs/Observable";
 import "rxjs/add/observable/fromPromise";
 import "rxjs/add/operator/mergeMap";
 
@@ -25,31 +25,31 @@ export interface IAuthConfig {
 }
 
 export interface IAuthConfigOptional {
-    headerName?: string;
-    headerPrefix?: string;
-    tokenName?: string;
-    tokenGetter?: () => string | Promise<string>;
-    noJwtError?: boolean;
-    noClientCheck?: boolean;
-    globalHeaders?: Array<Object>;
-    noTokenScheme?: boolean;
+  headerName?: string;
+  headerPrefix?: string;
+  tokenName?: string;
+  tokenGetter?: () => string | Promise<string>;
+  noJwtError?: boolean;
+  noClientCheck?: boolean;
+  globalHeaders?: Array<Object>;
+  noTokenScheme?: boolean;
 }
 
 export class AuthConfigConsts {
-    public static DEFAULT_TOKEN_NAME = 'id_token';
-    public static DEFAULT_HEADER_NAME = 'Authorization';
-    public static HEADER_PREFIX_BEARER = 'Bearer ';
+  public static DEFAULT_TOKEN_NAME = 'id_token';
+  public static DEFAULT_HEADER_NAME = 'Authorization';
+  public static HEADER_PREFIX_BEARER = 'Bearer ';
 }
 
 const AuthConfigDefaults: IAuthConfig = {
-    headerName: AuthConfigConsts.DEFAULT_HEADER_NAME,
-    headerPrefix: null,
-    tokenName: AuthConfigConsts.DEFAULT_TOKEN_NAME,
-    tokenGetter: () => localStorage.getItem(AuthConfigDefaults.tokenName) as string,
-    noJwtError: false,
-    noClientCheck: false,
-    globalHeaders: [],
-    noTokenScheme: false
+  headerName: AuthConfigConsts.DEFAULT_HEADER_NAME,
+  headerPrefix: null,
+  tokenName: AuthConfigConsts.DEFAULT_TOKEN_NAME,
+  tokenGetter: () => localStorage.getItem(AuthConfigDefaults.tokenName) as string,
+  noJwtError: false,
+  noClientCheck: false,
+  globalHeaders: [],
+  noTokenScheme: false
 };
 
 /**
@@ -76,7 +76,7 @@ export class AuthConfig {
     }
   }
 
-  public getConfig():IAuthConfig {
+  public getConfig(): IAuthConfig {
     return this._config;
   }
 
@@ -295,7 +295,7 @@ export class JwtHelper {
  * Checks for presence of token and that token hasn't expired.
  * For use with the @CanActivate router decorator and NgIf
  */
-export function tokenNotExpired(tokenName = AuthConfigConsts.DEFAULT_TOKEN_NAME, jwt?:string): boolean {
+export function tokenNotExpired(tokenName = AuthConfigConsts.DEFAULT_TOKEN_NAME, jwt?: string): boolean {
 
   const token: string = jwt || localStorage.getItem(tokenName);
 
@@ -333,7 +333,7 @@ function toObject(val: any) {
   if (val === null || val === undefined) {
     throw new TypeError('Object.assign cannot be called with null or undefined');
   }
-  
+
   return Object(val);
 }
 
@@ -341,16 +341,16 @@ function objectAssign(target: any, ...source: any[]) {
   let from: any;
   let to = toObject(target);
   let symbols: any;
-  
+
   for (var s = 1; s < arguments.length; s++) {
     from = Object(arguments[s]);
-    
+
     for (var key in from) {
       if (hasOwnProperty.call(from, key)) {
         to[key] = from[key];
       }
     }
-    
+
     if ((<any>Object).getOwnPropertySymbols) {
       symbols = (<any>Object).getOwnPropertySymbols(from);
       for (var i = 0; i < symbols.length; i++) {
@@ -362,6 +362,17 @@ function objectAssign(target: any, ...source: any[]) {
   }
   return to;
 }
+
+export const AUTH_CONFIG = new OpaqueToken('AuthConfig');
+
+export function provideAuthConfig(config: IAuthConfigOptional) {
+  return new AuthConfig(config);
+}
+
+export function provideHttp(config: AuthConfig, http: Http, options: RequestOptions) {
+  return new AuthHttp(config, http, options);
+}
+
 /**
  * Module for angular2-jwt
  * @experimental
@@ -371,18 +382,20 @@ function objectAssign(target: any, ...source: any[]) {
   providers: [AuthHttp, JwtHelper]
 })
 export class AuthModule {
-  constructor(@Optional() @SkipSelf() parentModule: AuthModule) {
+  constructor( @Optional() @SkipSelf() parentModule: AuthModule) {
     if (parentModule) {
       throw new Error(
-          'AuthModule is already loaded. Import it in the AppModule only');
+        'AuthModule is already loaded. Import it in the AppModule only');
     }
   }
 
-  static forRoot(config: AuthConfig): ModuleWithProviders {
+  static forRoot(config?: IAuthConfigOptional): ModuleWithProviders {
     return {
       ngModule: AuthModule,
       providers: [
-        {provide: AuthConfig, useValue: config}
+        { provide: AUTH_CONFIG, useValue: config },
+        { provide: AuthConfig, useFactory: provideAuthConfig, deps: [AUTH_CONFIG] },
+        { provide: AuthHttp, useFactory: provideHttp, deps: [AuthConfig, Http, RequestOptions] }
       ]
     };
   }
