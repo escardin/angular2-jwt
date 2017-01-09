@@ -13,14 +13,25 @@
             "es2015.promise",
             "es5"
         ],
-        "moduleResolution":"node"
+        "moduleResolution":"node",
+        "baseUrl":"",
+        "mapRoot": "",
+        "outDir": "./dist",
+        "rootDir": "./src"
+    },
+    "angularCompilerOptions": {
+        "genDir": "dist",
+        "entryModule": "src/lib/angular2-jwt#AuthModule"
     },
     "files": [
-        "angular2-jwt.ts",
-        "angular2-jwt.spec.ts",
+        "src/lib/angular2-jwt.ts",
+        "src/lib/angular2-jwt.spec.ts",
         "custom.d.ts"
     ],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "dist",
+        "**/*.ngfactory.ts",
+        "**/*.shim.ts"
     ]
 }
